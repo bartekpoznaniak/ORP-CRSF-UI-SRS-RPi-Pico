@@ -8,8 +8,8 @@ parser.add_argument('-c', '--channels', action='store_true',
                     help='Tylko RC channels (0x16)')
 parser.add_argument('-r', '--rest', action='store_true',
                     help='Tylko telemetry/reszta (bez 0x16)')
-parser.add_argument('-p', '--port', type=str, default='/dev/ttyUSB0',
-                    help='Port serial (default: /dev/ttyUSB0)')
+parser.add_argument('-p', '--port', type=str, default='/dev/ttyUSB2',
+                    help='Port serial (default: /dev/ttyUSB2)')
 parser.add_argument('-b', '--baud', type=int, default=420000,
                     help='Baudrate (default: 420000)')
 parser.add_argument('-t', '--threshold', type=int, default=100,

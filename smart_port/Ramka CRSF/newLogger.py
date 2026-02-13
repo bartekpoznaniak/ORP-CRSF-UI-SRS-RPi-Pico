@@ -89,13 +89,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Przykłady użycia:
-  %(prog)s                              # Domyślnie /dev/ttyUSB0 @ 420000
+  %(prog)s                              # Domyślnie /dev/ttyUSB2 @ 420000
   %(prog)s -p /dev/ttyAMA0 -b 400000    # Custom port i baudrate
   %(prog)s -p COM3 -b 416666            # Windows
         """
     )
-    parser.add_argument('-p', '--port', default='/dev/ttyUSB0', 
-                        help='Port szeregowy (default: /dev/ttyUSB0)')
+    parser.add_argument('-p', '--port', default='/dev/ttyUSB2', 
+                        help='Port szeregowy (default: /dev/2)')
     parser.add_argument('-b', '--baud', type=int, default=420000, 
                         help='Baudrate (default: 420000)')
     args = parser.parse_args()

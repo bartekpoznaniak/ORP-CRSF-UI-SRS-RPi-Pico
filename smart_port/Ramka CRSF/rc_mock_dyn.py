@@ -121,8 +121,8 @@ Przykłady:
   %(prog)s --ch1 sine --period 5 --min 500 --max 1500
         """
     )
-    parser.add_argument('-p', '--port', default='/dev/ttyUSB0',
-                        help='Port szeregowy (default: /dev/ttyUSB0)')
+    parser.add_argument('-p', '--port', default='/dev/ttyUSB2',
+                        help='Port szeregowy (default: /dev/ttyUSB2)')
     parser.add_argument('-b', '--baud', type=int, default=420000,
                         help='Baudrate (default: 420000)')
     parser.add_argument('-r', '--rate', type=int, default=100,

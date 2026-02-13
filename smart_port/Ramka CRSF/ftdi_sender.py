@@ -1,7 +1,7 @@
 import serial
 import time
 
-PORT = '/dev/ttyUSB0'  # Twój FTDI port (zmień na /dev/ttyACM0 jeśli inny)
+PORT = '/dev/ttyUSB2'  # Twój FTDI port (zmień na /dev/ttyACM0 jeśli inny)
 BAUD = 420000          # Standard CRSF baud
 
 def crc8_dvb_s2(data):

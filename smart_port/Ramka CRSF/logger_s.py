@@ -2,7 +2,8 @@ import serial
 import sys
 
 # Konfiguracja
-PORT = '/dev/ttyUSB0'
+PORT = '/dev/ttyUSB2' # sprawdzić jak alktualnie nazywa się port USB_FTDI tym: 'ls -l /dev/serial/by-id/'
+
 BAUD = 420000
 
 def decode_channels(payload):

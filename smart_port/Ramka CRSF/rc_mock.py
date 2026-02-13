@@ -77,8 +77,8 @@ Przykłady:
   %(prog)s --ch1 1811 --ch3 172      # CH1 full right, CH3 zero throttle
         """
     )
-    parser.add_argument('-p', '--port', default='/dev/ttyUSB0',
-                        help='Port szeregowy (default: /dev/ttyUSB0)')
+    parser.add_argument('-p', '--port', default='/dev/ttyUSB2',
+                        help='Port szeregowy (default: /dev/ttyUSB2)')
     parser.add_argument('-b', '--baud', type=int, default=420000,
                         help='Baudrate (default: 420000)')
     parser.add_argument('-r', '--rate', type=int, default=100,

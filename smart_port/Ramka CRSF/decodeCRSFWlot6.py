@@ -1,7 +1,7 @@
 import serial
 import sys
 
-PORT = '/dev/ttyUSB0'
+PORT = '/dev/ttyUSB2'
 BAUD = 420000
 THRESHOLD = 100  # Próg zmiany (ok. 10% zakresu), aby uniknąć szumu
 

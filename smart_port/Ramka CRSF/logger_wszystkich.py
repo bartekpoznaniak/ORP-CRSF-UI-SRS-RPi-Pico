@@ -3,8 +3,9 @@ import argparse
 from datetime import datetime
 
 # Konfiguracja CLI
+# sprawdzić jak alktualnie nazywa się port USB_FTDI tym: 'ls -l /dev/serial/by-id/' 
 parser = argparse.ArgumentParser(description='CRSF Raw Logger - Senior Version')
-parser.add_argument('-p', '--port', default='/dev/ttyUSB0', help='Port (default: /dev/ttyUSB0)')
+parser.add_argument('-p', '--port', default='/dev/ttyUSB2', help='Port (default: /dev/ttyUSB2)')
 parser.add_argument('-b', '--baud', type=int, default=420000, help='Baudrate (default: 420000)')
 args = parser.parse_args()
 
