@@ -1,0 +1,71 @@
+Skrypty aktualnie najświeższy to 
+
+1.py:
+[ISTOTNY0]
+to skrypt logujący Ramki CRSF i przedstawiający 
+je w formie odczytów z gimbali i przełączników Ten sam skrypt mozna podłączyć na linii s.port i 
+słuchać transmisję pomiędzy aparatura a modułęm es24pro oraz dokładnie ten sam skrypt 
+(po uart) do modułu SB nano - odbipornika po rf i sluchać tych samych ramek po transmisji RF 
+na odboiorniku. działa pięknie.
+kolejne przydatne skrypty to: 
+
+
+confLogger.py:
+[ISTOTNY3]
+ do zbierania ramek konfiguracyjnych na aparaturze do podsłuchiwania co się 
+dzieje na s.porcie kiedy zmieniamy konfigurację modułu es24 - przydatne do tworzenia 
+aplikacji konfigurującej parametry pracy es24pro z poziomu naszego nadajnika rpi.
+
+decodeCRSFWlot6.py:
+[ISTOTNY4]
+ to taki programik do pokazywania stanu gimbali robi to samo co 1.py 
+ale bez detekcji portu i bez obsługi echa na loopback. 
+
+ftdi_sender.py:
+[ISTOTNY0]
+Ten skrypt to emulator protokołu CRSF (Crossfire). Jego zadaniem jest generowanie 
+i wysyłanie przez port szeregowy (UART) ramek danych, które udają sygnały z 
+aparatury sterującej lub odbiornika RC (np. ExpressLRS).
+Symuluje ruchy drążków: Kanał 1 płynnie „pływa” od minimum do maksimum, a kanał 5 
+(często używany jako przełącznik ARM) przełącza się co sekundę.
+
+logger_wszystkich.py:
+[ISTOTNY0]
+jak sama nazwa looguije wszystkie złapane ramki CRSF.
+
+my_usb_ftdi.py:
+[ISTOTNY1]
+sprawdza jak nazywa się aktualnie port USB.
+
+nano_logg.py: 
+[ISTOTNY?]
+Nano prawdopodobnie od SB NANO 24 loguje jakieś ramki dedykowany do 
+RF komunikacji i zczytywania z modułu NANO
+
+newLogger_OLD.py:
+[ISTOTNY10]
+CRSF Raw Logger - Enhanced Edition
+Loguje ramki CRSF z weryfikacją CRC8, timestampami i statystykami
+
+newLogger.py: 
+[ISTOTNY2]
+nowasza wersja poprzednika.
+
+no_loopback_usb_autodetect_logger.py:
+wersja przejściowa ale działa prezenter snanu kanałów (ginbali itp)
+
+
+rc_mock_dyn.py:
+[ISTOTNY0]
+dynamicznie wysyła kanały do modułu do es24 działa bez aparatury 
+
+rc_mock.py:
+[ISTOTNY0]
+Wysyła ramki kanałów do es24 warto mieć.
+
+
+orpw2c.py:
+[ISTOTNY0]!
+interfejs graficzny bedzie potrzebny do stworzenia apki roboczej sterującej statkiem.
+
+
