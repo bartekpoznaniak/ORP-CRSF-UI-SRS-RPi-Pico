@@ -21,6 +21,14 @@ REQ-4: Graficzny interfejs odbiornika (UI z wirtualnymi joystickami i przyciskam
 
 REQ-5: Wyświetlanie telemetry z modelu (np. prędkość, pozycja) na ekranie.
 
+REQ-6  Gimbal Hall "Hala Fuj" (chińskie joysticki)
+
+| Kolor   | Pin Pico | Funkcja          |
+|---------|----------|--------------    |
+| Czarny  | 3V3      | +3.3V [web:24]   |
+| Czerwony| GND      | Masa [web:24]    |
+| Żółty   | GP26/ADC | Sygnał X [web:26]|
+
 Wymagania jakościowe:
 
 Opóźnienie od joysticka do efektora <10 ms.
