@@ -43,7 +43,7 @@ def build_uart_frame(channels: list[int]) -> bytes:
     for b in payload:
         crc ^= b
     frame = bytes([FRAME_SOF]) + payload + bytes([crc, FRAME_EOF])  # ← POZA pętlą
-    print(f"[TX] {frame.hex()}")
+    # print(f"[TX] {frame.hex()}")
     return frame
 
 
@@ -323,7 +323,7 @@ class App(ctk.CTk):
     # ── Wysyłanie ─────────────────────────────────────────────
 
     def _send_now(self):
-        print(f"[SEND] ser={self._ser is not None} gui_ch={self._gui_ch[:4]}")
+        
         if not self._ser:
             return
         frame = build_uart_frame(self._gui_ch)
@@ -334,7 +334,7 @@ class App(ctk.CTk):
 
     def _send_loop(self):
         """Cykliczne wysyłanie co 1000/SEND_HZ ms."""
-        print("[LOOP] tick")  # tymczasowy
+        
         self._send_now()
         self.after(1000 // SEND_HZ, self._send_loop)
 

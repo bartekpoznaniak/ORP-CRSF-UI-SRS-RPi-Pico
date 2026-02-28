@@ -322,7 +322,7 @@ class App(ctk.CTk):
         self._pack_bits()
 
     # ── Wysyłanie ─────────────────────────────────────────────
-
+    # GLUPI KOMENTARDZ DO USUNIĘCIA
     def _send_now(self):
         if not self._ser:
             return
