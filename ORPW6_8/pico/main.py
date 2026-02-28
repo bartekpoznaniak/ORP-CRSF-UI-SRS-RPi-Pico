@@ -63,12 +63,12 @@ ads = ADS1115(i2c, address=devices[0], gain=1)
 print(f"[I2C] ADS1115 @ {hex(devices[0])}")
 
 # UART1  GP4(TX) / GP5(RX)  ← komunikacja z RPI5
-uart_rpi = machine.UART(1, baudrate=57600,
+uart_rpi = machine.UART(1, baudrate=115200,
                         tx=machine.Pin(4), rx=machine.Pin(5),
-                        bits=8, parity=0, stop=1,
+                        bits=8, parity=None, stop=1,
                         rxbuf=128)
 
-print("[UART1] RPI5 link gotowy @ 57200 baud (GP4 TX / GP5 RX)")
+print("[UART1] RPI5 link gotowy @ 115200 baud (GP4 TX / GP5 RX)")
 
 # UART0  GP12(TX) → 74HC04 → ES24proTX
 uart_crsf = machine.UART(0, baudrate=420_000,
@@ -178,7 +178,7 @@ while True:
     if uart_rpi.any():
         raw = uart_rpi.read(uart_rpi.any())
         if raw:
-            # print(f"[RX] {raw.hex()}")
+            #print(f"[RX] {raw.hex()}")
             _rxbuf.extend(raw)
         # Ogranicz bufor do max 5 ramek żeby nie rosnął w nieskończoność
         if len(_rxbuf) > UART_FRAME_LEN * 5:
@@ -187,7 +187,7 @@ while True:
             if last_sof > 0:
                 _rxbuf[:] = _rxbuf[last_sof:]
     # Opróżnij bufor
-        while True:
+    while True:
             result, _rxbuf = try_parse_rpi_frame(_rxbuf)
             if result is None:
                 break
@@ -214,7 +214,7 @@ while True:
         uart_crsf.write(frame)
 
         # DEBUG — zakomentuj po testach
-        # print(_channels[:8])
+        #print(_channels[:16])
 
     # 3. Micro-yield
     time.sleep_us(500)
