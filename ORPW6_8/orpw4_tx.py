@@ -147,7 +147,7 @@ class SystemRow(ctk.CTkFrame):
         self.grid_columnconfigure(1, weight=1)
 
         ctk.CTkLabel(
-            self, text=name, font=("Arial", 13, "bold"), width=160, anchor="w"
+            self, text=name, font=("Arial", 20, "bold"), width=160, anchor="w"
         ).grid(row=0, column=0, padx=(10, 5), pady=10)
 
         self.slider = None
@@ -312,10 +312,10 @@ class App(ctk.CTk):
         print(f"[EVT] {name} | SW={state} | VAL={value}")
 
     def _pack_bits(self):
-        """Pakuje 33 bity przycisków do _gui_ch[0,1,2] (3×11 bitów)."""
-        self._gui_ch[0] = self._buttons & 0x7FF
-        self._gui_ch[1] = (self._buttons >> 11) & 0x7FF
-        self._gui_ch[2] = (self._buttons >> 22) & 0x7FF
+        self._gui_ch[0] = CRSF_MIN + (self._buttons & 0x07) * 200
+        self._gui_ch[1] = CRSF_CTR
+        self._gui_ch[2] = CRSF_CTR
+        print(f"[BITS] buttons={self._buttons:#010b} → gui_ch[0]={self._gui_ch[0]}")
 
     def _clear_bit(self, bit: int):
         self._buttons &= ~(1 << bit)
