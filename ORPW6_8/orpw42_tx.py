@@ -1,24 +1,28 @@
 #!/usr/bin/env python3
 """
-orpw4_tx.py  –  Military Control Panel UI (RPI5)
-Wysyła stany GUI do PICO przez UART GPIO4/GPIO5 @ 115200
-Protokół: 0xAA | 12x uint16 LE | XOR-CRC | 0xBB  (28 bajtów)
+orpw4_tx.py – Military Control Panel UI (RPI5) v2.0
+UART GPIO4/GPIO5 @ 115200: 0xAA | 12×uint16 LE | XOR-CRC | 0xBB (27 bajtów)
 
-CH map (indeksy 0-11 odpowiadają CH5-CH16 w CRSF):
-  idx 0-2  : packed bits przycisków (3 × 11 bitów = 33 bity)
-  idx 3-6  : suwaki (Obrót, Elewacja, Lufa, Moc)
-  idx 7-11 : rezerwa (wysyłamy 992)
+Mapowanie gui_ch[0..11] → CH5-CH16:
+  gui_ch[0]  CH5  : ARM (CRSF_MIN=off / CRSF_MAX=on)
+  gui_ch[1]  CH6  : Switch bitmask sw[0..9]   (raw 0-1023)
+  gui_ch[2]  CH7  : Switch bitmask sw[10..19] (raw 0-1023)
+  gui_ch[3]  CH8  : Switch bitmask sw[20..29] (raw 0-1023)
+  gui_ch[4]  CH9  : Obrót Wieży    (CRSF 172-1811)
+  gui_ch[5]  CH10 : Elewacja Działa(CRSF 172-1811)
+  gui_ch[6]  CH11 : Wysunięcie Lufy(CRSF 172-1811)
+  gui_ch[7]  CH12 : Moc Strzału    (CRSF 172-1811)
+  gui_ch[8]  CH13 : Fire bitmask   (raw 0-1023)
+  gui_ch[9]  CH14 : Rezerwa
+  gui_ch[10] CH15 : Rezerwa
+  gui_ch[11] CH16 : Rezerwa
 """
-
-# from distro import name
 
 import customtkinter as ctk
 import tkinter as tk
 import serial
 import struct
-import time
 from PIL import Image, ImageTk, ImageDraw, ImageFont
-
 
 CRSF_MIN, CRSF_MAX, CRSF_CTR = 172, 1811, 992
 UART_PORT = "/dev/ttyAMA2"
@@ -28,10 +32,7 @@ FRAME_SOF = 0xAA
 FRAME_EOF = 0xBB
 NUM_GUI_CH = 12
 
-
-# ─────────────────────────────────────────────────────────────
-#  HELPERS
-# ─────────────────────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────
 
 
 def map_crsf(val: float, lo: float, hi: float) -> int:
@@ -47,9 +48,7 @@ def build_uart_frame(channels: list[int]) -> bytes:
     return bytes([FRAME_SOF]) + payload + bytes([crc, FRAME_EOF])
 
 
-# ─────────────────────────────────────────────────────────────
-#  WIDGET: Gładki przełącznik ON/OFF
-# ─────────────────────────────────────────────────────────────
+# ── Widget: Smooth Toggle Switch ─────────────────────────────
 
 
 class SmoothToggleSwitch(tk.Canvas):
@@ -121,9 +120,7 @@ class SmoothToggleSwitch(tk.Canvas):
             self.command(self.state)
 
 
-# ─────────────────────────────────────────────────────────────
-#  WIDGET: Wiersz systemu
-# ─────────────────────────────────────────────────────────────
+# ── Widget: System Row ───────────────────────────────────────
 
 
 class SystemRow(ctk.CTkFrame):
@@ -200,9 +197,7 @@ class SystemRow(ctk.CTkFrame):
 
     def _on_impulse(self):
         if self.callback:
-            self.callback(
-                self.name, self.switch.state if self.switch else False, "IMPULSE"
-            )
+            self.callback(self.name, False, "IMPULSE")
 
     def _on_change(self, _=None):
         if self.callback:
@@ -211,14 +206,14 @@ class SystemRow(ctk.CTkFrame):
             self.callback(self.name, sw, val)
 
 
-# ─────────────────────────────────────────────────────────────
-#  APLIKACJA GŁÓWNA
-# ─────────────────────────────────────────────────────────────
+# ── Main App ─────────────────────────────────────────────────
 
 
 class App(ctk.CTk):
 
     SYSTEMS = [
+        # (name,            slider, button, switch, min,  max,  unit)
+        ("ARM", False, False, True, 0, 1, ""),
         ("Oświetlenie 1", False, False, True, 0, 1, ""),
         ("Oświetlenie 2", False, False, True, 0, 1, ""),
         ("Obrót Wieży", True, False, True, -180, 180, "°"),
@@ -228,26 +223,57 @@ class App(ctk.CTk):
         ("Procedura Ognia", False, True, False, 0, 0, ""),
     ]
 
-    SLIDER_MAP = {
-        "Obrót Wieży": (3, -180, 180),
-        "Elewacja Działa": (4, -20, 90),
-        "Wysunięcie Lufy": (5, 0, 500),
-        "Moc Strzału": (6, 0, 100),
+    # ARM → gui_ch[0] = CH5, osobna logika
+    ARM_IDX = 0
+
+    # Switch → (gui_ch_idx, bit)
+    # gui_ch[1]=CH6 bity 0-9, gui_ch[2]=CH7 bity 10-19, gui_ch[3]=CH8 bity 20-29
+    SWITCH_MAP = {
+        "Oświetlenie 1": (1, 1),
+        "Oświetlenie 2": (1, 2),
+        "Obrót Wieży": (1, 3),
+        "Elewacja Działa": (1, 4),
+        "Wysunięcie Lufy": (1, 5),
+        "Moc Strzału": (1, 6),
+        # "Oświetlenie 1": (1, 0),
+        # "Oświetlenie 2": (1, 1),
+        # "Obrót Wieży": (1, 2),
+        # "Elewacja Działa": (1, 3),
+        # "Wysunięcie Lufy": (1, 4),
+        # "Moc Strzału": (1, 5),
+        # Kolejne switche: (1, 6)..(1, 9), potem (2, 0)..(2, 9), itd.
     }
 
-    BIT_MAP = {
-        "Oświetlenie 1": 0,
-        "Oświetlenie 2": 1,
-        "Procedura Ognia": 2,
+    # Slider → (gui_ch_idx, lo, hi)
+    SLIDER_MAP = {
+        "Obrót Wieży": (4, -180, 180),
+        "Elewacja Działa": (5, -20, 90),
+        "Wysunięcie Lufy": (6, 0, 500),
+        "Moc Strzału": (7, 0, 100),
+    }
+
+    # Impulse → (gui_ch_idx, bit)
+    FIRE_MAP = {
+        # "Procedura Ognia": (8, 0),
+        "Procedura Ognia": (8, 1),
     }
 
     def __init__(self):
         super().__init__()
         self.title("Military Control Panel 2026")
-        self.geometry("820x520")
+        self.geometry("820x560")
 
         self._gui_ch = [CRSF_CTR] * NUM_GUI_CH
-        self._buttons = 0
+        self._gui_ch[self.ARM_IDX] = CRSF_MIN  # ARM domyślnie OFF
+        # self._gui_ch[1] = 0  # CH6 switch bitmask
+        # self._gui_ch[2] = 0  # CH7 switch bitmask
+        # self._gui_ch[3] = 0  # CH8 switch bitmask
+        # self._gui_ch[8] = 0  # CH13 fire bitmask
+
+        self._gui_ch[1] = 1  # CH6 switch bitmask
+        self._gui_ch[2] = 1  # CH7 switch bitmask
+        self._gui_ch[3] = 1  # CH8 switch bitmask
+        self._gui_ch[8] = 1  # CH13 fire bitmask
 
         try:
             self._ser = serial.Serial(UART_PORT, UART_BAUD, timeout=0.01)
@@ -260,7 +286,7 @@ class App(ctk.CTk):
             self, text="⚙ PANEL STEROWANIA – RC ELRS 2026", font=("Arial", 16, "bold")
         ).pack(pady=8)
 
-        self._frame = ctk.CTkScrollableFrame(self, width=780, height=420)
+        self._frame = ctk.CTkScrollableFrame(self, width=780, height=460)
         self._frame.pack(padx=16, pady=4, fill="both", expand=True)
 
         for name, sl, btn, sw, mi, ma, unit in self.SYSTEMS:
@@ -270,52 +296,46 @@ class App(ctk.CTk):
 
         self._send_loop()
 
-    # ── Logika zdarzeń ────────────────────────────────────────
-
     def _on_event(self, name: str, state: bool, value):
-        if name in self.SLIDER_MAP and value not in (None, "IMPULSE"):
-            idx, lo, hi = self.SLIDER_MAP[name]
-            self._gui_ch[idx] = map_crsf(float(value), lo, hi)
-
-        if name in self.BIT_MAP and isinstance(state, bool):
-            bit = self.BIT_MAP[name]
-            if state:
-                self._buttons |= 1 << bit
-            else:
-                self._buttons &= ~(1 << bit)
-            self._pack_bits()
-
-        if value == "IMPULSE" and name in self.BIT_MAP:
-            bit = self.BIT_MAP[name]
-            self._buttons |= 1 << bit
-            self._pack_bits()
-            self._send_now()
-            self.after(150, lambda b=bit: self._clear_bit(b))
-            print(f"[IMPULSE] {name} bit={bit}")
+        # ARM — osobny kanał, prosta wartość
+        if name == "ARM":
+            self._gui_ch[self.ARM_IDX] = CRSF_MAX if state else CRSF_MIN
             return
 
-        print(f"[EVT] {name} | SW={state} | VAL={value}")
-        print(f"[GUI_CH przed] {self._gui_ch}")
+        # Switch bitmask
+        if name in self.SWITCH_MAP:
+            ch_idx, bit = self.SWITCH_MAP[name]
 
-    def _pack_bits(self):
-        self._gui_ch[0] = CRSF_MIN + (self._buttons & 0x07) * 200
-        self._gui_ch[1] = CRSF_CTR
-        self._gui_ch[2] = CRSF_CTR
-        print(f"[BITS] buttons={self._buttons:#010b} → gui_ch[0]={self._gui_ch[0]}")
+            if state:
+                self._gui_ch[ch_idx] |= 1 << bit
+            else:
+                self._gui_ch[ch_idx] &= ~(1 << bit)
 
-    def _clear_bit(self, bit: int):
-        self._buttons &= ~(1 << bit)
-        self._pack_bits()
+        # Slider → CRSF range
+        if name in self.SLIDER_MAP and value not in (None, "IMPULSE"):
+            ch_idx, lo, hi = self.SLIDER_MAP[name]
+            self._gui_ch[ch_idx] = map_crsf(float(value), lo, hi)
 
-    # ── Wysyłanie ─────────────────────────────────────────────
+        # Fire impulse — chwilowy bit
+        if value == "IMPULSE" and name in self.FIRE_MAP:
+            ch_idx, bit = self.FIRE_MAP[name]
+            self._gui_ch[ch_idx] |= 1 << bit
+            self._send_now()
+            self.after(150, lambda ci=ch_idx, b=bit: self._clear_fire(ci, b))
+            return
+
+    def _clear_fire(self, ch_idx: int, bit: int):
+        self._gui_ch[ch_idx] &= ~(1 << bit)
 
     def _send_now(self):
         if not self._ser:
             return
-        frame = build_uart_frame(self._gui_ch)
-        print(f"[SEND] gui_ch={self._gui_ch[:8]}")
         try:
-            self._ser.write(frame)
+            self._ser.write(build_uart_frame(self._gui_ch))
+            frame = build_uart_frame(self._gui_ch)  # ←--- Najpierw to
+            # print(
+            #    f"[TX] CH6={self._gui_ch[1]:4d} frame={frame[1:7].hex().upper()} CRC={frame[25]:02X}"
+            # )
         except serial.SerialException as e:
             print(f"[UART] Błąd zapisu: {e}")
 
@@ -323,8 +343,6 @@ class App(ctk.CTk):
         self._send_now()
         self.after(1000 // SEND_HZ, self._send_loop)
 
-
-# ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     ctk.set_appearance_mode("dark")
