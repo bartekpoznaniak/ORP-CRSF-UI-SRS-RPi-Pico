@@ -1,2 +1,15 @@
+<<<<<<< HEAD
 venv/
 .venv/
+=======
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+*.csv
+.DS_Store
+.vscode/
+.idea/
+logs/
+*.save
+>>>>>>> 869e6b4350f06590aa752ceba51900476110d8d4

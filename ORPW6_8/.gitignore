@@ -1,0 +1,16 @@
+# Logi (wszystkie pliki kończące się na .log)
+*.log
+
+# Środowisko wirtualne
+venv/
+ENV/
+
+# Pliki tymczasowe Pythona
+__pycache__/
+*.pyc
+
+# Pliki systemowe
+.DS_Store
+Thumbs.db
+venv/
+.venv/
