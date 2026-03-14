@@ -1,10 +1,28 @@
 import serial
 import sys
+import glob  # Dodaj na górze pliku z innymi importami
+import os
 
 # Konfiguracja
-PORT = '/dev/ttyUSB2' # sprawdzić jak alktualnie nazywa się port USB_FTDI tym: 'ls -l /dev/serial/by-id/'
+#PORT = '/dev/ttyUSB2' # sprawdzić jak alktualnie nazywa się port USB_FTDI tym: 'ls -l /dev/serial/by-id/'
+# Dynamiczne wyszukiwanie portu FTDI/CRSF
+by_id_ports = glob.glob('/dev/serial/by-id/usb-FTDI*') + glob.glob('/dev/serial/by-id/*FTDI*')
+if by_id_ports:
+    PORT = by_id_ports[0]  # Pierwszy znaleziony (stabilny symlink)
+    print(f"Użyto portu: {PORT}")
+else:
+    tty_ports = glob.glob('/dev/ttyUSB*')
+    if tty_ports:
+        PORT = tty_ports[0]  # Fallback na pierwszy ttyUSB
+        print(f"Fallback port: {PORT}")
+    else:
+        print("Brak portu USB-serial (FTDI/ttyUSB)! Podłącz urządzenie i sprawdź lsusb/dmesg.")
+        sys.exit(1)
+
 
 BAUD = 420000
+def clear_console():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def decode_channels(payload):
     channels = []
@@ -24,6 +42,7 @@ try:
     buffer = bytearray()
     
     # Ukrywamy kursor dla lepszego efektu
+    clear_console()
     sys.stdout.write("\033[?25l")
     sys.stdout.flush()
 
@@ -47,7 +66,6 @@ try:
             
             if f_type == 0x16:
                 channels = decode_channels(frame[3:-1])
-                
                 # ANSI: Powrót na górę ekranu (0,0)
                 output = "\033[H" 
                 output += "=== CRSF MONITOR (STACJONARNY) ===\n"
