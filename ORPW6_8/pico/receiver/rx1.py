@@ -3,15 +3,14 @@ import sys
 import gc
 import micropython
 import time
-#from mcp2515 import MCP2515, CAN_500KBPS, MCP_8MHz
 
 try:
-    machine.UART(1).deinit()
+    machine.UART(0).deinit()
 except:
     pass
 
-machine.Pin(5, machine.Pin.IN, machine.Pin.PULL_UP)
-uart = machine.UART(1, baudrate=420000, tx=machine.Pin(4), rx=machine.Pin(5),
+machine.Pin(1, machine.Pin.IN, machine.Pin.PULL_UP)
+uart = machine.UART(0, baudrate=420000, tx=machine.Pin(0), rx=machine.Pin(1),
                     timeout=0, rxbuf=1024)
 
 _ch  = [0] * 16

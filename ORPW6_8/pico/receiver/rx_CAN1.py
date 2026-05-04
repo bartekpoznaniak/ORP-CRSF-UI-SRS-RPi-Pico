@@ -3,7 +3,7 @@ import sys
 import gc
 import micropython
 import time
-#from mcp2515 import MCP2515, CAN_500KBPS, MCP_8MHz
+from mcp2515 import MCP2515, CAN_500KBPS, MCP_8MHz
 
 try:
     machine.UART(1).deinit()
@@ -13,6 +13,15 @@ except:
 machine.Pin(5, machine.Pin.IN, machine.Pin.PULL_UP)
 uart = machine.UART(1, baudrate=420000, tx=machine.Pin(4), rx=machine.Pin(5),
                     timeout=0, rxbuf=1024)
+spi = machine.SPI(0, baudrate=1_000_000, polarity=0, phase=0,
+                  sck=machine.Pin(18), mosi=machine.Pin(19), miso=machine.Pin(16))
+cs = machine.Pin(17, machine.Pin.OUT)
+cs.value(1)
+can = MCP2515(spi, cs)
+can.begin(CAN_500KBPS, MCP_8MHz)
+CAN_ID_FIRE  = 0x100
+FIRE_PAYLOAD = bytearray([0xF1, 0x12, 0xE0, 0x00, 0x00, 0x00, 0x00, 0x00])
+FIRE_COOLDOWN = 500                    
 
 _ch  = [0] * 16
 
@@ -41,7 +50,8 @@ sys.stdout.write('\x1b[2J\x1b[H\x1b[?25l')
 # Rate-limit: wyświetlaj max co 100ms (10Hz) - UART czyta cały czas 50Hz!
 last_display = time.ticks_ms()
 _last_gc = 0
-
+_fire_armed = True
+_fire_last  = 0
 try:
     while True:
         # UART zawsze czyta pełną prędkością
@@ -69,9 +79,18 @@ try:
 
             if buffer[pos + 2] == 0x16:
                 decode_channels(memoryview(buffer)[pos+3:pos+full_len-1], _ch)
+                ch13 = _ch[12]
+                now  = time.ticks_ms()
+                if ch13 == 2 and _fire_armed:
+                    can.sendMsgBuf(CAN_ID_FIRE, 0, 8, FIRE_PAYLOAD)
+                    sys.stdout.write('\x1b[10;0H>>> FIRE! CAN wysłany <<<\n')
+                    _fire_armed = False
+                    _fire_last  = now
 
-                # Wyświetl TYLKO jeśli minęło 100ms – nie blokuj pętli UART!
-                now = time.ticks_ms()
+                if ch13 == 0 and not _fire_armed:
+                    if time.ticks_diff(now, _fire_last) > FIRE_COOLDOWN:
+                        _fire_armed = True
+
                 if time.ticks_diff(now, last_display) >= 100:
                     out  = '\x1b[H=== CRSF MONITOR (PICO) ===\n'
                     out += f'RAW TYPE: 0x16 | LEN: {full_len}\n'
