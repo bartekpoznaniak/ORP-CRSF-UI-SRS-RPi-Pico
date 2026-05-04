@@ -33,6 +33,20 @@ can = MCP2515(spi, cs)
 can.begin(CAN_500KBPS, MCP_8MHz)
 
 # ============================================================
+#  Konfiguracja suwaków (CH9-CH12)
+#  Format: indeks_kanału → CAN_ID
+# ============================================================
+SLIDER_MAP = {
+    8:  0x120,   # CH9
+    9:  0x121,   # CH10
+    10: 0x122,   # CH11
+    11: 0x123,   # CH12
+}
+
+SLIDER_COOLDOWN  = 50    # ms — jak często wysyłać podczas ruchu
+SLIDER_DEADBAND  = 10    # jednostki CRSF — ignoruj mikrodrgania
+
+# ============================================================
 #  Konfiguracja ARM (CH5)
 # ============================================================
 CAN_ID_ARM    = 0x101
@@ -77,6 +91,32 @@ _sw_sent  = {mask: 0     for mask in SWITCH_MAP}
 
 _arm_last      = False
 _arm_last_sent = 0
+
+_slider_last      = {ch: -1 for ch in SLIDER_MAP}   # -1 = nigdy nie wysłany
+_slider_last_sent = {ch: 0  for ch in SLIDER_MAP}
+
+# ============================================================
+#  Funkcja obsługi suwaków
+# ============================================================
+def process_sliders(channels, now):
+    for ch_idx, can_id in SLIDER_MAP.items():
+        raw = channels[ch_idx]                        # 172–1810
+        val = (raw - 172) * 255 // (1810 - 172)      # mapuj → 0–255
+        val = max(0, min(255, val))                   # clamp
+
+        # Wyślij tylko gdy zmiana > deadband
+        if abs(val - _slider_last[ch_idx]) > SLIDER_DEADBAND:
+            if time.ticks_diff(now, _slider_last_sent[ch_idx]) > SLIDER_COOLDOWN:
+                payload = bytearray([val, 0x00, 0x00, 0x00,
+                                     0x00, 0x00, 0x00, 0x00])
+                can.sendMsgBuf(can_id, 0, 8, payload)
+                sys.stdout.write('SLIDER CH{} → 0x{:03X} val={}\n'.format(
+                    ch_idx + 1, can_id, val))
+                _slider_last[ch_idx]      = val
+                _slider_last_sent[ch_idx] = now
+
+
+
 # ============================================================
 #  Funkcja obsługi przełączników
 # ============================================================
@@ -189,7 +229,11 @@ try:
 
                 # --- ARM (CH5) ---
                 process_arm(_ch[4], now)  
+                # --- Sliders ch9-ch12 ---
+                process_sliders(_ch, now)
+
                 # --- Display 10 Hz ---
+
                 if time.ticks_diff(now, last_display) >= 100:
                     out  = '\x1b[H=== CAN MASTER (PICO) ===\n'
                     out += f'RAW TYPE: 0x16 | LEN: {full_len}\n'
@@ -198,7 +242,14 @@ try:
                         out += f'CH{i+1:02}: {_ch[i]:<5} | CH{i+2:02}: {_ch[i+1]:<5}\n'
                     out += '----------------------------------------\n'
                     out += 'ARM: {}\n'.format("*** ARMED ***" if _arm_last else "disarmed")
-                    
+
+                    slider_line = ' '.join(
+                        'S{}:{:3d}'.format(i + 1, max(0, min(255,
+                            (_ch[ch] - 172) * 255 // (1810 - 172))))
+                        for i, ch in enumerate(SLIDER_MAP)
+                    )
+                    out += slider_line + '\n'
+
                     sw_line = ' '.join(
                         'P{}:{}'.format(
                             list(SWITCH_MAP.keys()).index(m) + 1,
@@ -207,8 +258,34 @@ try:
                         for m in SWITCH_MAP
                     )
                     out += sw_line + '\n'
+
                     sys.stdout.write(out)
                     last_display = now
+
+
+#                 if time.ticks_diff(now, last_display) >= 100:
+#                     out  = '\x1b[H=== CAN MASTER (PICO) ===\n'
+#                     out += f'RAW TYPE: 0x16 | LEN: {full_len}\n'
+#                     out += '----------------------------------------\n'
+#                     for i in range(0, 16, 2):
+#                         out += f'CH{i+1:02}: {_ch[i]:<5} | CH{i+2:02}: {_ch[i+1]:<5}\n'
+#                     out += '----------------------------------------\n'
+#                     out += 'ARM: {}\n'.format("*** ARMED ***" if _arm_last else "disarmed")
+#                     slider_line = ' '.join('S{}:{:3d}'.format(i + 1, max(0, min(255,(_ch[ch] - 172) * 255 // (1810 - 172))))
+#                     for i, ch in enumerate(SLIDER_MAP)
+# )
+#                     out += slider_line + '\n'
+#                     out += sw_line + '\n'
+#                     sw_line = ' '.join(
+#                         'P{}:{}'.format(
+#                             list(SWITCH_MAP.keys()).index(m) + 1,
+#                             "ON " if _sw_state[m] else "OFF"
+#                         )
+#                         for m in SWITCH_MAP
+#                     )
+#                     out += sw_line + '\n'
+#                     sys.stdout.write(out)
+#                     last_display = now
 
             pos      += full_len
             _last_gc += 1
