@@ -214,13 +214,26 @@ try:
                 now = time.ticks_ms()
 
                 # --- FIRE (CH13) ---
+                
                 ch13 = _ch[12]
-                if ch13 == 2 and _fire_armed:
-                    can.sendMsgBuf(CAN_ID_FIRE, 0, 8, FIRE_PAYLOAD)
+                fire = ch13 & 0b10
+                mode = ch13 >> 2
+                if fire and _fire_armed:
+                #ch13 = _ch[12]
+                #if ch13 == 2 and _fire_armed:
+
+                    #can.sendMsgBuf(CAN_ID_FIRE, 0, 8, FIRE_PAYLOAD)
+                    
+                    payload = bytearray(FIRE_PAYLOAD)
+                    payload[1] = mode
+                    can.sendMsgBuf(CAN_ID_FIRE, 0, 8, payload)
+
                     sys.stdout.write('\x1b[10;0H>>> FIRE! CAN wysłany <<<\n')
                     _fire_armed = False
                     _fire_last  = now
-                if ch13 == 0 and not _fire_armed:
+                #if ch13 == 0 and not _fire_armed:
+                if not fire and not _fire_armed:
+
                     if time.ticks_diff(now, _fire_last) > FIRE_COOLDOWN:
                         _fire_armed = True
 
@@ -263,29 +276,6 @@ try:
                     last_display = now
 
 
-#                 if time.ticks_diff(now, last_display) >= 100:
-#                     out  = '\x1b[H=== CAN MASTER (PICO) ===\n'
-#                     out += f'RAW TYPE: 0x16 | LEN: {full_len}\n'
-#                     out += '----------------------------------------\n'
-#                     for i in range(0, 16, 2):
-#                         out += f'CH{i+1:02}: {_ch[i]:<5} | CH{i+2:02}: {_ch[i+1]:<5}\n'
-#                     out += '----------------------------------------\n'
-#                     out += 'ARM: {}\n'.format("*** ARMED ***" if _arm_last else "disarmed")
-#                     slider_line = ' '.join('S{}:{:3d}'.format(i + 1, max(0, min(255,(_ch[ch] - 172) * 255 // (1810 - 172))))
-#                     for i, ch in enumerate(SLIDER_MAP)
-# )
-#                     out += slider_line + '\n'
-#                     out += sw_line + '\n'
-#                     sw_line = ' '.join(
-#                         'P{}:{}'.format(
-#                             list(SWITCH_MAP.keys()).index(m) + 1,
-#                             "ON " if _sw_state[m] else "OFF"
-#                         )
-#                         for m in SWITCH_MAP
-#                     )
-#                     out += sw_line + '\n'
-#                     sys.stdout.write(out)
-#                     last_display = now
 
             pos      += full_len
             _last_gc += 1
